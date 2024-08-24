@@ -1,0 +1,65 @@
+# Byte-compiled files
+*.class
+
+# Log files
+*.log
+
+# Directory for Maven
+target/
+
+# Directory for Gradle
+build/
+
+# Eclipse project files
+.metadata/
+*.launch
+*.project
+*.classpath
+
+# IntelliJ IDEA project files
+.idea/
+*.iml
+*.iws
+out/
+
+# NetBeans project files
+nbproject/private/
+nbbuild/
+nbdist/
+nbactions.xml
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Build directories
+*.jar
+*.war
+*.ear
+
+# System files
+*.swp
+*.swo
+*.swn
+*.tmp
+*.bak
+*.orig
+
+# Other files to ignore
+*.class
+*.log
+*.tmp
+*.bak
+
+# Gradle Wrapper
+.gradle/
+gradle-wrapper.jar
+gradle-wrapper.properties
+
+# Maven Wrapper
+.mvn/wrapper/
+mvnw
+mvnw.cmd
+
+# Configuration files
+*.env
