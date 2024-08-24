@@ -44,7 +44,7 @@ public class Connect4 {
             if (gameMode != GameMode.PVP && ((!turn && gameMode == GameMode.AI_PLAYER_1) ||
                     (turn && gameMode == GameMode.AI_PLAYER_2))) {
                 col = ai.chooseCol(board);
-                System.out.println(">> AI chose column " + col);
+                System.out.println(String.format(">> AI chose column: %d", col + 1));
             } else {
                 String[] optionTexts = {
                         "Enter column to place token:",
@@ -66,7 +66,7 @@ public class Connect4 {
                     System.out.println(board.toString());
                     switch (state) {
                         case TIED:
-                            System.err.println("TIED");
+                            System.err.println("Tied");
                             return;
                         case PLAYER_1_WON:
                             System.err.println("Player 1 won");
@@ -82,8 +82,6 @@ public class Connect4 {
                 turn = !turn;
             } catch (Exception e) {
                 System.err.println(e);
-                System.err.println("Invalid col: " + col);
-                // TODO: handle exception
             }
         }
     }
@@ -135,6 +133,5 @@ public class Connect4 {
                     break;
             }
         }
-        // scanner.close(); // Close the scanner
     }
 }
