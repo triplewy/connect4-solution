@@ -1,5 +1,5 @@
 public class Board {
-    public static final int ROWS = 4;
+    public static final int ROWS = 5;
     public static final int COLS = 5;
     public static final int WIN_CONDITION = 4;
 
@@ -64,18 +64,19 @@ public class Board {
             throw new Exception("Game is over");
         }
         // Check if can place token on the column by checking if first row has item
-        if (this.board[0][col] != Token.EMPTY) {
+        if (this.board[ROWS - 1][col] != Token.EMPTY) {
             throw new Exception("Invalid move");
         }
         // Place token at the bottom most row without token
-        int i = this.board.length - 1;
-        while (i >= 0 && this.board[i][col] != Token.EMPTY) {
-            i -= 1;
+        int row = ROWS - 1;
+        while (row >= 0 && this.board[row][col] == Token.EMPTY) {
+            row -= 1;
         }
+        row += 1;
         if (this.turn) {
-            this.board[i][col] = Token.PLAYER_2;
+            this.board[row][col] = Token.PLAYER_2;
         } else {
-            this.board[i][col] = Token.PLAYER_1;
+            this.board[row][col] = Token.PLAYER_1;
         }
         // Flip the turn
         this.turn = !this.turn;
@@ -152,12 +153,12 @@ public class Board {
     @Override
     public String toString() {
         String[] result = new String[ROWS + 1];
-        for (int i = 0; i < ROWS; i++) {
-            String[] row = new String[COLS];
-            for (int j = 0; j < row.length; j++) {
-                row[j] = String.format(" %s ", this.board[i][j].toString());
+        for (int row = ROWS - 1; row >= 0; row--) {
+            String[] rowString = new String[COLS];
+            for (int col = 0; col < COLS; col++) {
+                rowString[col] = String.format(" %s ", this.board[row][col].toString());
             }
-            result[i] = "|" + String.join("|", row) + "|";
+            result[ROWS - 1 - row] = "|" + String.join("|", rowString) + "|";
         }
         // Add index footer column
         String[] footer = new String[COLS];

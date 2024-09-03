@@ -32,7 +32,10 @@ public class Connect4 {
         Board board = new Board();
         // Create AI. Instantiate it regardless of whether we actually have AI
         // so that we can avoid compile errors
-        AI ai = new AI(gameMode == GameMode.AI_PLAYER_1);
+        AI ai = null;
+        if (gameMode != GameMode.PVP) {
+            ai = new AI(gameMode == GameMode.AI_PLAYER_1);
+        }
         // Create a boolean to track the turn
         Boolean turn = false;
         while (true) {
@@ -43,7 +46,7 @@ public class Connect4 {
             // Check if AI is choosing the column
             if (gameMode != GameMode.PVP && ((!turn && gameMode == GameMode.AI_PLAYER_1) ||
                     (turn && gameMode == GameMode.AI_PLAYER_2))) {
-                col = ai.chooseCol(board);
+                col = ai.chooseCol(board.cloneBoard());
                 System.out.println(String.format(">> AI chose column: %d", col + 1));
             } else {
                 String[] optionTexts = {
