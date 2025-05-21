@@ -16,13 +16,10 @@ public class AI {
     // Model to store scores for each possible column given a string
     // representation of the current board
     private Map<Long, double[]> model;
-    // heightsMasks is a memoization map to store bitmasks for each height
-    private Map<Long, Long> heightsMasks;
 
     public AI(Boolean isPlayerOne) {
         this.isPlayerOne = isPlayerOne;
         this.model = new HashMap<Long, double[]>();
-        this.heightsMasks = new HashMap<Long, Long>();
 
         // Create the internal representation for the board, which is a 64 bit long
         // with the values of column taking the first ROW*COL bits. For a standard 6x7
@@ -35,7 +32,7 @@ public class AI {
         // Calculate time duration to for AI to generate the model
         System.out.println("Generating AI model...");
         Instant start = Instant.now();
-        generateModel(board, this.model, this.heightsMasks);
+        generateModel(board, this.model);
         Instant end = Instant.now();
 
         Duration duration = Duration.between(start, end);
@@ -86,14 +83,14 @@ public class AI {
 
     // generateModel returns a list of scores that represents the win/not-lose
     // probability for that move and that player
-    private static double[] generateModel(long board, Map<Long, double[]> model, Map<Long, Long> heightsMasks) {
-        long modelKey = getModelKey(board, heightsMasks);
+    private static double[] generateModel(long board, Map<Long, double[]> model) {
+        long modelKey = getModelKey(board);
         // Check if we have the board in the model, if we do then return
         if (model.containsKey(modelKey)) {
             return model.get(modelKey);
         }
         // Get our scores table that lists the scores for each possible col
-        double[] scores = generateModelScores(board, model, heightsMasks);
+        double[] scores = generateModelScores(board, model);
 
         // Store the possible scores in the model
         model.put(modelKey, scores);
@@ -103,7 +100,7 @@ public class AI {
 
     // generateModel returns a list of scores that represents the win/not-lose
     // probability for that move and that player
-    private static double[] generateModelScores(long board, Map<Long, double[]> model, Map<Long, Long> heightsMasks) {
+    private static double[] generateModelScores(long board, Map<Long, double[]> model) {
         // Create our scores table that lists the scores for each possible col
         double[] scores = new double[Board.COLS];
         // Initialize our scores table with -1 indicating there is no score
@@ -150,7 +147,7 @@ public class AI {
             // Invert the board to represent the board from the other player's perspective
             board = invertSignificantBits(board, Board.ROWS * Board.COLS);
             // Calculate the scores for this move
-            double[] newScores = generateModel(board, model, heightsMasks);
+            double[] newScores = generateModel(board, model);
             // Invert the board to represent the board from the original player's
             // perspective
             board = invertSignificantBits(board, Board.ROWS * Board.COLS);
@@ -282,19 +279,15 @@ public class AI {
         return boardLong;
     }
 
-    private static long getModelKey(long board, Map<Long, Long> heightsMasks) {
+    private static long getModelKey(long board) {
         // Get the full heights representation, which is all the bits after the board
         long heights = board & ~((1L << Board.ROWS * Board.COLS) - 1);
-        if (heightsMasks.containsKey(heights)) {
-            return heights | (board & heightsMasks.get(heights));
-        }
         // Generate heights mask
         long heightMask = 0L;
         for (int col = 0; col < Board.COLS; col++) {
             long height = getColHeight(board, col);
             heightMask = heightMask | (((1L << height) - 1) << Board.ROWS * col);
         }
-        heightsMasks.put(heights, heightMask);
         return heights | (board & heightMask);
     }
 }

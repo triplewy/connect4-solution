@@ -1,7 +1,7 @@
 public class Board {
-    public static final int ROWS = 4;
+    public static final int ROWS = 5;
     public static final int COLS = 4;
-    public static final int WIN_CONDITION = 3;
+    public static final int WIN_CONDITION = 4;
 
     public static final String LIVE = "LIVE";
     public static final String TIED = "TIED";
