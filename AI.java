@@ -143,14 +143,15 @@ public class AI {
             // Place token in bottom-most possible row
             board = setToken(board, height, col);
             board = setColHeight(board, col, height + 1);
-
             // Invert the board to represent the board from the other player's perspective
             board = invertSignificantBits(board, Board.ROWS * Board.COLS);
             // Calculate the scores for this move
             double[] newScores = generateModel(board, model);
-            // Invert the board to represent the board from the original player's
-            // perspective
+            // Undo the invert board
             board = invertSignificantBits(board, Board.ROWS * Board.COLS);
+            // Undo the move
+            board = setColHeight(board, col, height);
+            board = unsetToken(board, height, col);
 
             // Get scores for each col
             double totalScore = 0;
@@ -165,10 +166,6 @@ public class AI {
                 totalMoves++;
             }
             scores[col] = totalScore / totalMoves;
-
-            // Undo the move
-            board = setColHeight(board, col, height);
-            board = unsetToken(board, height, col);
         }
         // Store the possible scores in the model
         return scores;
