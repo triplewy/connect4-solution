@@ -1,6 +1,5 @@
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,26 +13,17 @@ public class AI {
     private static int[][] DIRECTIONS = new int[][] { { 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, };
     // Boolean that keeps stores if AI is player 1
     private Boolean isPlayerOne;
-    // Model map to store scores for each possible column given a string
+    // Model to store scores for each possible column given a string
     // representation of the current board
-    private Map<String, double[]> modelV1;
-    private Map<Long, double[]> modelV2;
-
+    private Map<Long, double[]> model;
+    // heightsMasks is a memoization map to store bitmasks for each height
     private Map<Long, Long> heightsMasks;
 
     public AI(Boolean isPlayerOne) {
         this.isPlayerOne = isPlayerOne;
-        this.modelV1 = new HashMap<String, double[]>();
-        this.modelV2 = new HashMap<Long, double[]>();
+        this.model = new HashMap<Long, double[]>();
         this.heightsMasks = new HashMap<Long, Long>();
 
-        // Create the internal reprsentation for the board, which are two int[]
-        // arrays of length Board.COLS. The first int[] array represents the
-        // heights of each column. The second int[] array represents the bit values
-        // of each column where 1s and 0s represent the player1 and player2 tokens,
-        // respectively.
-        int[] heights = new int[Board.COLS];
-        int[] values = new int[Board.COLS];
         // Create the internal representation for the board, which is a 64 bit long
         // with the values of column taking the first ROW*COL bits. For a standard 6x7
         // board, this would be the first 42 bits. The next bits are the heights of each
@@ -45,7 +35,7 @@ public class AI {
         // Calculate time duration to for AI to generate the model
         System.out.println("Generating AI model...");
         Instant start = Instant.now();
-        generateModel(board, this.modelV2, this.heightsMasks);
+        generateModel(board, this.model, this.heightsMasks);
         Instant end = Instant.now();
 
         Duration duration = Duration.between(start, end);
@@ -68,11 +58,11 @@ public class AI {
             }
         }
         // Generate the model key
-        long modelKey = getModelV2Key(board);
+        long modelKey = getModelKey(board);
         // Assert that we have the model key
-        assert this.modelV2.containsKey(modelKey) : "model does not have key";
+        assert this.model.containsKey(modelKey) : "model does not have key";
         // We should always have the key in the memo map
-        double[] scores = this.modelV2.get(modelKey);
+        double[] scores = this.model.get(modelKey);
         // Print scores for debugging purposes
         String[] scoresString = new String[scores.length];
         for (int i = 0; i < scores.length; i++) {
@@ -93,24 +83,6 @@ public class AI {
 
     // generateModel returns a list of scores that represents the win/not-lose
     // probability for that move and that player
-    private static double[] generateModel(int[] heights, int[] values, Map<String, double[]> model) {
-        // Get model key
-        String modelKey = getModelKey(heights, values);
-        // Check if we have the key in the memo map, if we do then return
-        if (model.containsKey(modelKey)) {
-            return model.get(modelKey);
-        }
-        // Get our scores table that lists the scores for each possible col
-        double[] scores = generateModelScores(heights, values, model);
-
-        // Store the possible scores in the model
-        model.put(modelKey, scores);
-
-        return scores;
-    }
-
-    // generateModel returns a list of scores that represents the win/not-lose
-    // probability for that move and that player
     private static double[] generateModel(long board, Map<Long, double[]> model, Map<Long, Long> heightsMasks) {
         long modelKey = getModelKey(board, heightsMasks);
         // Check if we have the board in the model, if we do then return
@@ -123,84 +95,6 @@ public class AI {
         // Store the possible scores in the model
         model.put(modelKey, scores);
 
-        return scores;
-    }
-
-    // generateModel returns a list of scores that represents the win/not-lose
-    // probability for that move and that player
-    private static double[] generateModelScores(int[] heights, int[] values, Map<String, double[]> model) {
-        // Create our scores table that lists the scores for each possible col
-        double[] scores = new double[Board.COLS];
-        // Initialize our scores table with -1 indicating there is no score
-        for (int col = 0; col < Board.COLS; col++) {
-            scores[col] = -1;
-        }
-        // Check if we can automatically win with any of the columns
-        // Return early if we find any automatic wins
-        for (int col = 0; col < Board.COLS; col++) {
-            // Skip columns that are full
-            if (heights[col] == Board.ROWS) {
-                continue;
-            }
-            // Place token in bottom-most possible row
-            values[col] = values[col] | (1 << heights[col]);
-            heights[col]++;
-            // Check if automatic win
-            Board.State gameState = getGameState(heights, values, col);
-            // Undo the move
-            heights[col]--;
-            values[col] = values[col] & ~(1 << heights[col]);
-            // Check the game state if we won
-            if (gameState == Board.State.PLAYER_1_WON) {
-                scores[col] = 1;
-                return scores;
-            }
-            // If we tied with this move, set the score to 0.5 but don't immediately return
-            else if (gameState == Board.State.TIED) {
-                scores[col] = 0.5;
-            }
-        }
-        // Can choose one of 7 columns to place a token.
-        for (int col = 0; col < Board.COLS; col++) {
-            // Skip columns that are full or lead to a tie
-            if (heights[col] == Board.ROWS || scores[col] != -1) {
-                continue;
-            }
-            // Place token in bottom-most possible row
-            values[col] = values[col] | (1 << heights[col]);
-            heights[col]++;
-
-            // Invert the board to represent the board from the other player's perspective
-            for (int i = 0; i < values.length; i++) {
-                values[i] = invertSignificantBits(values[i], heights[i]);
-            }
-            // Calculate the scores for this move
-            double[] newScores = generateModel(heights, values, model);
-            // Invert the board to represent the board from the original player's
-            // perspective
-            for (int i = 0; i < values.length; i++) {
-                values[i] = invertSignificantBits(values[i], heights[i]);
-            }
-
-            // Get scores for each col
-            double totalScore = 0;
-            double totalMoves = 0;
-            for (int i = 0; i < Board.COLS; i++) {
-                // Do not count the scores that are non-valid
-                if (newScores[i] == -1) {
-                    continue;
-                }
-                // Take the inverse of the score as it's our opponent who's taking the turn.
-                totalScore += 1 - newScores[i];
-                totalMoves++;
-            }
-            scores[col] = totalScore / totalMoves;
-
-            // Undo the move
-            heights[col]--;
-            values[col] = values[col] & ~(1 << heights[col]);
-        }
-        // Store the possible scores in the model
         return scores;
     }
 
@@ -310,24 +204,6 @@ public class AI {
         return board & ~mask;
     }
 
-    private static int invertSignificantBits(int number, int k) {
-        // Create a mask with k significant bits set to 1
-        int mask = (1 << k) - 1; // Example: k=4 -> mask=1111 (binary)
-
-        // Extract the significant bits from the number
-        int significantBits = number & mask;
-
-        // Invert the significant bits
-        int invertedBits = ~significantBits & mask;
-
-        // Combine the inverted bits back into the number
-        // Remove the original significant bits from the number
-        int clearedNumber = number & ~mask;
-
-        // Place the inverted bits into their original position
-        return clearedNumber | invertedBits;
-    }
-
     private static long invertSignificantBits(long number, int k) {
         // Create a mask with k significant bits set to 1
         long mask = (1L << k) - 1; // Example: k=4 -> mask=1111 (binary)
@@ -382,43 +258,7 @@ public class AI {
         return Board.State.TIED;
     }
 
-    // Gets game state based on col that a token was just placed in
-    private static Board.State getGameState(int[] heights, int[] values, int col) {
-        int row = heights[col] - 1;
-        // All cardinal directions except N starting from NE going clockwise
-        for (int d = 0; d < DIRECTIONS.length; d++) {
-            // Calculate the streak
-            int streak = 0;
-
-            for (int[] modifier : new int[][] { { 1, 1 }, { -1, -1 } }) {
-                int x = row;
-                int y = col;
-                while (0 <= x && x < Board.ROWS && 0 <= y && y < Board.COLS
-                        && ((values[y] & (1 << x)) > 0)) {
-                    streak += 1;
-                    x += DIRECTIONS[d][0] * modifier[0];
-                    y += DIRECTIONS[d][1] * modifier[1];
-                }
-            }
-            // Subtract 1 from streak to prevent double counting
-            streak -= 1;
-
-            if (streak >= Board.WIN_CONDITION) {
-                return Board.State.PLAYER_1_WON;
-            }
-        }
-        // Check if all cols have maximum height
-        for (int i = 0; i < heights.length; i++) {
-            // If we have a height that is not the max, then the game is still live
-            if (heights[i] != Board.ROWS) {
-                return Board.State.LIVE;
-            }
-        }
-        // If all heights are at the max, then the game is tied
-        return Board.State.TIED;
-    }
-
-    private static long getModelV2Key(Board.Token[][] board) {
+    private static long getModelKey(Board.Token[][] board) {
         // Convert board into internal representation of board
         long boardLong = 0L;
         for (int col = 0; col < Board.COLS; col++) {
@@ -453,37 +293,5 @@ public class AI {
         }
         heightsMasks.put(heights, heightMask);
         return heights | (board & heightMask);
-    }
-
-    private static String getModelKey(Board.Token[][] board) {
-        // Convert board into internal representation of board
-        int[] heights = new int[Board.COLS];
-        int[] values = new int[Board.COLS];
-        for (int col = 0; col < Board.COLS; col++) {
-            int row = Board.ROWS - 1;
-            while (row >= 0 && board[row][col] == Board.Token.EMPTY) {
-                row--;
-            }
-            heights[col] = row + 1;
-            values[col] = 0;
-            // Create the bit representation of the column
-            for (int i = 0; i <= row; i++) {
-                // If the token is player2, then skip
-                if (board[i][col] == Board.Token.PLAYER_2) {
-                    continue;
-                }
-                // The bottom-most row is the least significant bit
-                values[col] = values[col] | 1 << i;
-            }
-        }
-        return getModelKey(heights, values);
-    }
-
-    private static String getModelKey(int[] heights, int[] values) {
-        String[] keyArr = new String[Board.COLS];
-        for (int i = 0; i < keyArr.length; i++) {
-            keyArr[i] = String.format("%d|%d", heights[i], values[i]);
-        }
-        return String.join(",", keyArr);
     }
 }
