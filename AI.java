@@ -44,15 +44,15 @@ public class AI {
 
     // chooseCol takes in the connect4 board as input and returns the column
     // to place a token in
-    public int chooseCol(Board.Token[][] board) {
+    public int chooseCol(String[][] board) {
         // Only flip the board if AI is player2
         if (!this.isPlayerOne) {
             for (int i = 0; i < board.length; i++) {
                 for (int j = 0; j < board[i].length; j++) {
-                    if (board[i][j] == Board.Token.PLAYER_1) {
-                        board[i][j] = Board.Token.PLAYER_2;
-                    } else if (board[i][j] == Board.Token.PLAYER_2) {
-                        board[i][j] = Board.Token.PLAYER_1;
+                    if (board[i][j] == Board.PLAYER_1) {
+                        board[i][j] = Board.PLAYER_2;
+                    } else if (board[i][j] == Board.PLAYER_2) {
+                        board[i][j] = Board.PLAYER_1;
                     }
                 }
             }
@@ -60,7 +60,10 @@ public class AI {
         // Generate the model key
         long modelKey = getModelKey(board);
         // Assert that we have the model key
-        assert this.model.containsKey(modelKey) : "model does not have key";
+        if (!this.model.containsKey(modelKey)) {
+            System.out.println("model does not have key");
+            return -1;
+        }
         // We should always have the key in the memo map
         double[] scores = this.model.get(modelKey);
         // Print scores for debugging purposes
@@ -119,17 +122,17 @@ public class AI {
             board = setToken(board, height, col);
             board = setColHeight(board, col, height + 1);
             // Check if automatic win
-            Board.State gameState = getGameState(board, col);
+            String gameState = getGameState(board, col);
             // Undo the move
             board = setColHeight(board, col, height);
             board = unsetToken(board, height, col);
             // Check the game state if we won
-            if (gameState == Board.State.PLAYER_1_WON) {
+            if (gameState == Board.PLAYER_1_WON) {
                 scores[col] = 1;
                 return scores;
             }
             // If we tied with this move, set the score to 0.5 but don't immediately return
-            else if (gameState == Board.State.TIED) {
+            else if (gameState == Board.TIED) {
                 scores[col] = 0.5;
             }
         }
@@ -223,7 +226,7 @@ public class AI {
     }
 
     // Gets game state based on col that a token was just placed in
-    private static Board.State getGameState(long board, long col) {
+    private static String getGameState(long board, long col) {
         long row = getColHeight(board, col) - 1;
         // All cardinal directions except N starting from NE going clockwise
         for (int d = 0; d < DIRECTIONS.length; d++) {
@@ -244,33 +247,33 @@ public class AI {
             streak -= 1;
 
             if (streak >= Board.WIN_CONDITION) {
-                return Board.State.PLAYER_1_WON;
+                return Board.PLAYER_1_WON;
             }
         }
         // Check if all cols have maximum height
         for (int i = 0; i < Board.COLS; i++) {
             // If we have a height that is not the max, then the game is still live
             if (getColHeight(board, i) != Board.ROWS) {
-                return Board.State.LIVE;
+                return Board.LIVE;
             }
         }
         // If all heights are at the max, then the game is tied
-        return Board.State.TIED;
+        return Board.TIED;
     }
 
-    private static long getModelKey(Board.Token[][] board) {
+    private static long getModelKey(String[][] board) {
         // Convert board into internal representation of board
         long boardLong = 0L;
         for (int col = 0; col < Board.COLS; col++) {
             int row = Board.ROWS - 1;
-            while (row >= 0 && board[row][col] == Board.Token.EMPTY) {
+            while (row >= 0 && board[row][col] == Board.EMPTY) {
                 row--;
             }
             boardLong = setColHeight(boardLong, col, row + 1);
             // Create the bit representation of the column
             for (int i = 0; i <= row; i++) {
                 // If the token is player2, then skip
-                if (board[i][col] == Board.Token.PLAYER_2) {
+                if (board[i][col] == Board.PLAYER_2) {
                     continue;
                 }
                 boardLong = setToken(boardLong, i, col);

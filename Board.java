@@ -1,46 +1,31 @@
 public class Board {
     public static final int ROWS = 4;
-    public static final int COLS = 5;
-    public static final int WIN_CONDITION = 4;
+    public static final int COLS = 4;
+    public static final int WIN_CONDITION = 3;
 
-    public enum State {
-        LIVE,
-        TIED,
-        PLAYER_1_WON,
-        PLAYER_2_WON,
-    }
+    public static final String LIVE = "LIVE";
+    public static final String TIED = "TIED";
+    public static final String PLAYER_1_WON = "PLAYER_1_WON";
+    public static final String PLAYER_2_WON = "PLAYER_2_WON";
 
-    public enum Token {
-        EMPTY(" "),
-        PLAYER_1("X"),
-        PLAYER_2("0");
-
-        private final String name;
-
-        Token(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
+    public static final String EMPTY = " ";
+    public static final String PLAYER_1 = "X";
+    public static final String PLAYER_2 = "O";
 
     // board is the connect4 board
-    private Token[][] board;
+    private String[][] board;
     // Current player's turn. We can just use boolean to represent player 1 or 2.
     private Boolean turn;
 
     // Constructor
     public Board() {
         // Initialize connect4 board
-        this.board = new Token[ROWS][COLS];
+        this.board = new String[ROWS][COLS];
 
         // Initialize board with empty spaces for presentation purposes
         for (int i = 0; i < this.board.length; i++) {
             for (int j = 0; j < this.board[i].length; j++) {
-                this.board[i][j] = Token.EMPTY;
+                this.board[i][j] = EMPTY;
             }
         }
 
@@ -48,8 +33,8 @@ public class Board {
         this.turn = false;
     }
 
-    public Token[][] cloneBoard() {
-        Token[][] clone = new Token[ROWS][COLS];
+    public String[][] cloneBoard() {
+        String[][] clone = new String[ROWS][COLS];
         for (int i = 0; i < clone.length; i++) {
             for (int j = 0; j < clone[i].length; j++) {
                 clone[i][j] = this.board[i][j];
@@ -58,25 +43,25 @@ public class Board {
         return clone;
     }
 
-    public State turn(int col) throws Exception {
+    public String turn(int col) throws Exception {
         // Check if the game is still live
-        if (getGameState(this.board) != State.LIVE) {
+        if (getGameState(this.board) != LIVE) {
             throw new Exception("Game is over");
         }
-        // Check if can place token on the column by checking if first row has item
-        if (this.board[ROWS - 1][col] != Token.EMPTY) {
+        // Check if can place String on the column by checking if first row has item
+        if (this.board[ROWS - 1][col] != EMPTY) {
             throw new Exception("Invalid move");
         }
-        // Place token at the bottom most row without token
+        // Place String at the bottom most row without String
         int row = ROWS - 1;
-        while (row >= 0 && this.board[row][col] == Token.EMPTY) {
+        while (row >= 0 && this.board[row][col] == EMPTY) {
             row -= 1;
         }
         row += 1;
         if (this.turn) {
-            this.board[row][col] = Token.PLAYER_2;
+            this.board[row][col] = PLAYER_2;
         } else {
-            this.board[row][col] = Token.PLAYER_1;
+            this.board[row][col] = PLAYER_1;
         }
         // Flip the turn
         this.turn = !this.turn;
@@ -84,7 +69,7 @@ public class Board {
         return getGameState(this.board);
     }
 
-    public static State getGameState(Token[][] board) {
+    public static String getGameState(String[][] board) {
         int[][][] visited = new int[ROWS][COLS][4];
         for (int i = 0; i < visited.length; i++) {
             for (int j = 0; j < visited[i].length; j++) {
@@ -97,31 +82,31 @@ public class Board {
         for (int i = 0; i < board.length; i++) {
             for (int j = 0; j < board[i].length; j++) {
                 // Don't care about spaces that are empty
-                if (board[i][j] == Token.EMPTY) {
+                if (board[i][j] == EMPTY) {
                     hasEmpty = true;
                     continue;
                 }
                 if (dfs(board, i, j, visited, directions)) {
                     // Check if player 1 or player 2
-                    if (board[i][j] == Token.PLAYER_1) {
-                        return State.PLAYER_1_WON;
+                    if (board[i][j] == PLAYER_1) {
+                        return PLAYER_1_WON;
                     }
-                    return State.PLAYER_2_WON;
+                    return PLAYER_2_WON;
                 }
             }
         }
         if (hasEmpty) {
-            return State.LIVE;
+            return LIVE;
         }
-        return State.TIED;
+        return TIED;
     }
 
     // Do DFS
-    // Store (current position, how many tokens we've seen, and direction traveled)
+    // Store (current position, how many Strings we've seen, and direction traveled)
     // Direction can be between -1 to 3 where 1 is no direction and 0 to 3 are the
     // cardinal directions N, NE, E, SE
     // Returns whether a player has won or not
-    private static Boolean dfs(Token[][] board, int x, int y, int[][][] visited, int[][] directions) {
+    private static Boolean dfs(String[][] board, int x, int y, int[][][] visited, int[][] directions) {
         for (int d = 0; d < directions.length; d++) {
             int[] direction = directions[d];
             int newX = x + direction[0];
